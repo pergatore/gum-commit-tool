@@ -14,18 +14,34 @@ echo -e "${BLUE}=== Git Commit Wizard Installer ===${NC}"
 echo "This script will install the Git Commit Wizard to standardize your commit messages."
 echo ""
 
-# Detect shell type
+# Improved shell detection for WSL and other environments
 SHELL_TYPE="bash"
-if [ -n "$ZSH_VERSION" ]; then
+SHELL_PATH=$(echo $SHELL)
+
+# Check based on shell path
+if [[ "$SHELL_PATH" == *"zsh"* ]]; then
   SHELL_TYPE="zsh"
-elif [ -n "$BASH_VERSION" ]; then
+elif [[ "$SHELL_PATH" == *"bash"* ]]; then
   SHELL_TYPE="bash"
 else
-  echo -e "${YELLOW}Shell type not automatically detected. Defaulting to bash.${NC}"
-  echo -e "${YELLOW}If you use zsh, you may need to manually modify your .zshrc file.${NC}"
+  # Ask user directly if automatic detection fails
+  echo -e "${YELLOW}Shell type not automatically detected.${NC}"
+  echo -e "Please select your shell type:"
+  echo "1) Bash"
+  echo "2) Zsh"
+  
+  read -r shell_choice
+  case $shell_choice in
+    2)
+      SHELL_TYPE="zsh"
+      ;;
+    *)
+      SHELL_TYPE="bash"
+      ;;
+  esac
 fi
 
-echo -e "${BLUE}Detected shell: ${YELLOW}$SHELL_TYPE${NC}"
+echo -e "${BLUE}Using shell: ${YELLOW}$SHELL_TYPE${NC}"
 echo ""
 
 # Create script directory if it doesn't exist
@@ -309,7 +325,7 @@ chmod +x ~/.git-scripts/git-commit-wizard.sh
 echo -e "${BLUE}Setting up git alias...${NC}"
 git config --global alias.commit '!~/.git-scripts/git-commit-wizard.sh'
 
-# Add shell function based on detected shell type
+# Set shell config file based on detected shell type
 if [ "$SHELL_TYPE" = "zsh" ]; then
   SHELL_CONFIG_FILE=~/.zshrc
 else
