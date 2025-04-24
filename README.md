@@ -30,7 +30,7 @@ Git Commit Wizard:
 
 ```bash
 # Create the installation script
-curl -o install-git-wizard.sh https://raw.githubusercontent.com/yourusername/git-commit-wizard/main/install-git-wizard.sh
+curl -o install-git-wizard.sh https://raw.githubusercontent.com/pergatore/git-commit-wizard/main/install-git-wizard.sh
 
 # Make it executable
 chmod +x install-git-wizard.sh
@@ -46,7 +46,7 @@ source ~/.bashrc
 
 ```bash
 # Create the installation script
-curl -o install-git-wizard.sh https://raw.githubusercontent.com/yourusername/git-commit-wizard/main/install-git-wizard-zsh.sh
+curl -o install-git-wizard.sh https://raw.githubusercontent.com/pergatore/git-commit-wizard/main/install-git-wizard-zsh.sh
 
 # Make it executable
 chmod +x install-git-wizard.sh
