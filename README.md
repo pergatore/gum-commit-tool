@@ -1,4 +1,4 @@
-# Git Commit Wizard
+# Simple Git Commit Wizard
 
 A command-line tool that standardizes your Git commit messages according to the [Conventional Commits](https://www.conventionalcommits.org/) specification. This makes your repository history more consistent and easier to navigate.
 
