@@ -30,16 +30,14 @@ show_help() {
   exit 0
 }
 
-# Parse arguments to check for --help or --no-wizard
+# Parse arguments to check for --help, --no-wizard, and -m/--message
 skip_wizard=false
 has_message=false
 message_value=""
 
-# Check for -m or --message flag and its value
-i=0
-while [ $i -lt $# ]; do
+# Loop through all arguments
+for ((i=1; i<=$#; i++)); do
   arg="${!i}"
-  i=$((i+1))
   
   case "$arg" in
     --help|-h)
@@ -50,9 +48,10 @@ while [ $i -lt $# ]; do
       ;;
     -m|--message)
       has_message=true
-      if [ $i -lt $# ]; then
-        message_value="${!i}"
-        i=$((i+1))
+      # Get the next argument as the message
+      next=$((i+1))
+      if [ $next -le $# ]; then
+        message_value="${!next}"
       fi
       ;;
     -m=*|--message=*)
@@ -285,6 +284,11 @@ for arg in "$@"; do
     new_args+=("$arg")
   fi
 done
+
+# Debug output to verify message capturing (can be removed in production)
+if [ "$has_message" = true ]; then
+  echo -e "${BLUE}Using message from command line: '${YELLOW}${message_value}${BLUE}'${NC}"
+fi
 
 # Build the git commit command
 if [ "$edit_message" = true ]; then
