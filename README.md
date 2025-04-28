@@ -120,11 +120,16 @@ When amending a commit:
 ```bash
 git commit --amend
 ```
+The wizard will extract the type, scope, and breaking change indicators from the previous commit message, allowing you to maintain consistency.
+
 ### Using the -m flag
 
-If you're used to using -m this script also supports that and will just query for type and scope instead
+When using the -m flag: 
+```bash
+git commit -m "Message"
+```
+The wizard will use the provided message and just prompt for type and scope
 
-The wizard will extract the type, scope, and breaking change indicators from the previous commit message, allowing you to maintain consistency.
 
 ## Commit Types
 
