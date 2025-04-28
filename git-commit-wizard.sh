@@ -22,6 +22,7 @@ show_help() {
   echo "  -a, --all             Commit all changed files"
   echo "  -e, --edit            Open editor for commit message (after wizard)"
   echo "  -v, --verbose         Show diff in commit message editor"
+  echo "  -m, --message         Use the provided message after selecting type and scope"
   echo "  --amend               Amend previous commit"
   echo "  --no-wizard           Skip the wizard and use normal git commit"
   echo ""
@@ -31,29 +32,46 @@ show_help() {
 
 # Parse arguments to check for --help or --no-wizard
 skip_wizard=false
-for arg in "$@"; do
+has_message=false
+message_value=""
+
+# Check for -m or --message flag and its value
+i=0
+while [ $i -lt $# ]; do
+  arg="${!i}"
+  i=$((i+1))
+  
   case "$arg" in
     --help|-h)
       show_help
       ;;
     --no-wizard)
       skip_wizard=true
-      # Remove this option since git commit doesn't understand it
-      args=()
-      for arg in "$@"; do
-        if [ "$arg" != "--no-wizard" ]; then
-          args+=("$arg")
-        fi
-      done
-      set -- "${args[@]}"
-      break
+      ;;
+    -m|--message)
+      has_message=true
+      if [ $i -lt $# ]; then
+        message_value="${!i}"
+        i=$((i+1))
+      fi
+      ;;
+    -m=*|--message=*)
+      has_message=true
+      message_value="${arg#*=}"
       ;;
   esac
 done
 
 # If --no-wizard was specified, just pass through to git commit
 if [ "$skip_wizard" = true ]; then
-  exec git commit "$@"
+  # Remove --no-wizard flag since git commit doesn't understand it
+  args=()
+  for arg in "$@"; do
+    if [ "$arg" != "--no-wizard" ]; then
+      args+=("$arg")
+    fi
+  done
+  exec git commit "${args[@]}"
   exit $?
 fi
 
@@ -196,9 +214,15 @@ if [ -z "$type" ]; then
       breaking=""
   fi
 
-  # Prompt for commit message
-  echo -e "${GREEN}Enter commit message:${NC}"
-  read -r message
+  # If -m flag was provided, use its value as the message
+  if [ "$has_message" = true ] && [ -n "$message_value" ]; then
+      message="$message_value"
+      echo -e "${BLUE}Using provided commit message: ${YELLOW}$message${NC}"
+  else
+      # Prompt for commit message
+      echo -e "${GREEN}Enter commit message:${NC}"
+      read -r message
+  fi
 fi
 
 # Format scope if provided
@@ -224,8 +248,8 @@ for arg in "$@"; do
   fi
 done
 
-# If edit flag wasn't passed, confirm commit
-if [ "$edit_message" = false ]; then
+# If edit flag wasn't passed and we don't have a message from -m, confirm commit
+if [ "$edit_message" = false ] && [ "$has_message" = false ]; then
   echo -e "${GREEN}Proceed with this commit message? (Y/n/e):${NC}"
   echo -e "${BLUE}Y - Commit with this message${NC}"
   echo -e "${BLUE}n - Abort the commit${NC}"
@@ -239,6 +263,29 @@ if [ "$edit_message" = false ]; then
   fi
 fi
 
+# Build new git arguments without -m or --message flags
+new_args=()
+skip_next=false
+for arg in "$@"; do
+  if [ "$skip_next" = true ]; then
+    skip_next=false
+    continue
+  fi
+  
+  if [[ "$arg" == "-m" || "$arg" == "--message" ]]; then
+    skip_next=true
+    continue
+  fi
+  
+  if [[ "$arg" == -m=* || "$arg" == --message=* ]]; then
+    continue
+  fi
+  
+  if [ "$arg" != "--no-wizard" ]; then
+    new_args+=("$arg")
+  fi
+done
+
 # Build the git commit command
 if [ "$edit_message" = true ]; then
   # Create a temporary file for the commit message
@@ -246,14 +293,14 @@ if [ "$edit_message" = true ]; then
   echo "$commit_msg" > "$temp_file"
   
   # Execute git commit with the file
-  git commit -F "$temp_file" -e "$@"
+  git commit -F "$temp_file" -e "${new_args[@]}"
   exit_code=$?
   
   # Clean up
   rm -f "$temp_file"
 else
   # Execute git commit directly
-  git commit -m "$commit_msg" "$@"
+  git commit -m "$commit_msg" "${new_args[@]}"
   exit_code=$?
 fi
 
