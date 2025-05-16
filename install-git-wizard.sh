@@ -29,15 +29,15 @@ else
   echo -e "Please select your shell type:"
   echo "1) Bash"
   echo "2) Zsh"
-  
+
   read -r shell_choice
   case $shell_choice in
-    2)
-      SHELL_TYPE="zsh"
-      ;;
-    *)
-      SHELL_TYPE="bash"
-      ;;
+  2)
+    SHELL_TYPE="zsh"
+    ;;
+  *)
+    SHELL_TYPE="bash"
+    ;;
   esac
 fi
 
@@ -49,7 +49,7 @@ mkdir -p ~/.git-scripts
 
 # Create the commit wizard script
 echo -e "${BLUE}Creating Git Commit Wizard script...${NC}"
-cat > ~/.git-scripts/git-commit-wizard.sh << 'EOF'
+cat >~/.git-scripts/git-commit-wizard.sh <<'EOF'
 #!/bin/bash
 
 # Git Commit Wizard
@@ -74,6 +74,7 @@ show_help() {
   echo "  -a, --all             Commit all changed files"
   echo "  -e, --edit            Open editor for commit message (after wizard)"
   echo "  -v, --verbose         Show diff in commit message editor"
+  echo "  -m, --message         Use the provided message after selecting type and scope"
   echo "  --amend               Amend previous commit"
   echo "  --no-wizard           Skip the wizard and use normal git commit"
   echo ""
@@ -81,31 +82,68 @@ show_help() {
   exit 0
 }
 
-# Parse arguments to check for --help or --no-wizard
+# Function to ensure proper conventional commit format
+ensure_proper_format() {
+  local message="$1"
+  
+  # Ensure the first word of the message is lowercase
+  # Split the message into first word and rest
+  if [[ $message =~ ^([A-Z][a-zA-Z0-9]*)(.*)$ ]]; then
+    local first_word="${BASH_REMATCH[1]}"
+    local rest_of_message="${BASH_REMATCH[2]}"
+    
+    # Convert the first word to lowercase
+    local lowercase_first=$(echo "$first_word" | tr '[:upper:]' '[:lower:]')
+    
+    # Combine and return
+    message="$lowercase_first$rest_of_message"
+    echo -e "${YELLOW}Note: First word capitalization corrected to match conventional commit standards${NC}"
+  fi
+  
+  echo "$message"
+}
+
+# Parse arguments to check for --help, --no-wizard, and -m/--message
 skip_wizard=false
-for arg in "$@"; do
+has_message=false
+message_value=""
+
+# Loop through all arguments
+for ((i=1; i<=$#; i++)); do
+  arg="${!i}"
+  
   case "$arg" in
     --help|-h)
       show_help
       ;;
     --no-wizard)
       skip_wizard=true
-      # Remove this option since git commit doesn't understand it
-      args=()
-      for arg in "$@"; do
-        if [ "$arg" != "--no-wizard" ]; then
-          args+=("$arg")
-        fi
-      done
-      set -- "${args[@]}"
-      break
+      ;;
+    -m|--message)
+      has_message=true
+      # Get the next argument as the message
+      next=$((i+1))
+      if [ $next -le $# ]; then
+        message_value="${!next}"
+      fi
+      ;;
+    -m=*|--message=*)
+      has_message=true
+      message_value="${arg#*=}"
       ;;
   esac
 done
 
 # If --no-wizard was specified, just pass through to git commit
 if [ "$skip_wizard" = true ]; then
-  exec git commit "$@"
+  # Remove --no-wizard flag since git commit doesn't understand it
+  args=()
+  for arg in "$@"; do
+    if [ "$arg" != "--no-wizard" ]; then
+      args+=("$arg")
+    fi
+  done
+  exec git commit "${args[@]}"
   exit $?
 fi
 
@@ -226,6 +264,8 @@ if [ -z "$type" ]; then
       12)
           echo -e "${GREEN}Enter custom type (without colon):${NC}"
           read -r type
+          # Ensure the type is lowercase
+          type=$(echo "$type" | tr '[:upper:]' '[:lower:]')
           ;;
       *)
           echo -e "${RED}Invalid selection. Defaulting to 'chore'.${NC}"
@@ -248,10 +288,19 @@ if [ -z "$type" ]; then
       breaking=""
   fi
 
-  # Prompt for commit message
-  echo -e "${GREEN}Enter commit message:${NC}"
-  read -r message
+  # If -m flag was provided, use its value as the message
+  if [ "$has_message" = true ] && [ -n "$message_value" ]; then
+      message="$message_value"
+      echo -e "${BLUE}Using provided commit message: ${YELLOW}$message${NC}"
+  else
+      # Prompt for commit message
+      echo -e "${GREEN}Enter commit message:${NC}"
+      read -r message
+  fi
 fi
+
+# Format the message to follow conventional commit standards
+message=$(ensure_proper_format "$message")
 
 # Format scope if provided
 if [ -n "$scope" ]; then
@@ -276,8 +325,8 @@ for arg in "$@"; do
   fi
 done
 
-# If edit flag wasn't passed, confirm commit
-if [ "$edit_message" = false ]; then
+# If edit flag wasn't passed and we don't have a message from -m, confirm commit
+if [ "$edit_message" = false ] && [ "$has_message" = false ]; then
   echo -e "${GREEN}Proceed with this commit message? (Y/n/e):${NC}"
   echo -e "${BLUE}Y - Commit with this message${NC}"
   echo -e "${BLUE}n - Abort the commit${NC}"
@@ -291,6 +340,34 @@ if [ "$edit_message" = false ]; then
   fi
 fi
 
+# Build new git arguments without -m or --message flags
+new_args=()
+skip_next=false
+for arg in "$@"; do
+  if [ "$skip_next" = true ]; then
+    skip_next=false
+    continue
+  fi
+  
+  if [[ "$arg" == "-m" || "$arg" == "--message" ]]; then
+    skip_next=true
+    continue
+  fi
+  
+  if [[ "$arg" == -m=* || "$arg" == --message=* ]]; then
+    continue
+  fi
+  
+  if [ "$arg" != "--no-wizard" ]; then
+    new_args+=("$arg")
+  fi
+done
+
+# Debug output to verify message capturing (can be removed in production)
+if [ "$has_message" = true ]; then
+  echo -e "${BLUE}Using message from command line: '${YELLOW}${message_value}${BLUE}'${NC}"
+fi
+
 # Build the git commit command
 if [ "$edit_message" = true ]; then
   # Create a temporary file for the commit message
@@ -298,14 +375,14 @@ if [ "$edit_message" = true ]; then
   echo "$commit_msg" > "$temp_file"
   
   # Execute git commit with the file
-  git commit -F "$temp_file" -e "$@"
+  git commit -F "$temp_file" -e "${new_args[@]}"
   exit_code=$?
   
   # Clean up
   rm -f "$temp_file"
 else
   # Execute git commit directly
-  git commit -m "$commit_msg" "$@"
+  git commit -m "$commit_msg" "${new_args[@]}"
   exit_code=$?
 fi
 
@@ -339,7 +416,7 @@ if grep -q "Git commit wrapper function" "$SHELL_CONFIG_FILE"; then
   echo -e "${YELLOW}Function already exists in $SHELL_CONFIG_FILE. Skipping.${NC}"
 else
   # Add the function to the shell config file
-  cat >> "$SHELL_CONFIG_FILE" << 'EOF'
+  cat >>"$SHELL_CONFIG_FILE" <<'EOF'
 
 # Git commit wrapper function
 git() {

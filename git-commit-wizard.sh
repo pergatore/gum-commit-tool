@@ -30,34 +30,55 @@ show_help() {
   exit 0
 }
 
+# Function to ensure proper conventional commit format
+ensure_proper_format() {
+  local message="$1"
+
+  # Ensure the first word of the message is lowercase
+  # Split the message into first word and rest
+  if [[ $message =~ ^([A-Z][a-zA-Z0-9]*)(.*)$ ]]; then
+    local first_word="${BASH_REMATCH[1]}"
+    local rest_of_message="${BASH_REMATCH[2]}"
+
+    # Convert the first word to lowercase
+    local lowercase_first=$(echo "$first_word" | tr '[:upper:]' '[:lower:]')
+
+    # Combine and return
+    message="$lowercase_first$rest_of_message"
+    echo -e "${YELLOW}Note: First word capitalization corrected to match conventional commit standards${NC}"
+  fi
+
+  echo "$message"
+}
+
 # Parse arguments to check for --help, --no-wizard, and -m/--message
 skip_wizard=false
 has_message=false
 message_value=""
 
 # Loop through all arguments
-for ((i=1; i<=$#; i++)); do
+for ((i = 1; i <= $#; i++)); do
   arg="${!i}"
-  
+
   case "$arg" in
-    --help|-h)
-      show_help
-      ;;
-    --no-wizard)
-      skip_wizard=true
-      ;;
-    -m|--message)
-      has_message=true
-      # Get the next argument as the message
-      next=$((i+1))
-      if [ $next -le $# ]; then
-        message_value="${!next}"
-      fi
-      ;;
-    -m=*|--message=*)
-      has_message=true
-      message_value="${arg#*=}"
-      ;;
+  --help | -h)
+    show_help
+    ;;
+  --no-wizard)
+    skip_wizard=true
+    ;;
+  -m | --message)
+    has_message=true
+    # Get the next argument as the message
+    next=$((i + 1))
+    if [ $next -le $# ]; then
+      message_value="${!next}"
+    fi
+    ;;
+  -m=* | --message=*)
+    has_message=true
+    message_value="${arg#*=}"
+    ;;
   esac
 done
 
@@ -93,28 +114,28 @@ message=""
 if [ "$is_amend" = true ]; then
   # Get the last commit message
   last_commit=$(git log -1 --pretty=%B)
-  
+
   # Try to extract conventional commit parts
   if [[ $last_commit =~ ^([a-z]+)(\([a-zA-Z0-9_-]+\))?(!)?:\ (.*)$ ]]; then
     type="${BASH_REMATCH[1]}"
     scope="${BASH_REMATCH[2]}"
     breaking="${BASH_REMATCH[3]}"
     message="${BASH_REMATCH[4]}"
-    
+
     # Clean up scope (remove parentheses)
     scope="${scope#(}"
     scope="${scope%)}"
-    
+
     echo -e "${BLUE}Extracted from previous commit:${NC}"
     echo -e "Type: ${YELLOW}$type${NC}"
     [ -n "$scope" ] && echo -e "Scope: ${YELLOW}$scope${NC}"
     [ -n "$breaking" ] && echo -e "Breaking: ${YELLOW}Yes${NC}"
     echo -e "Message: ${YELLOW}$message${NC}"
     echo ""
-    
+
     echo -e "${GREEN}Use these values? [Y/n]${NC}"
     read -r reuse_values
-    
+
     if [[ ! $reuse_values =~ ^[Nn]$ ]]; then
       # Keep these values
       echo -e "${BLUE}Using extracted values from previous commit${NC}"
@@ -148,56 +169,58 @@ if [ -z "$type" ]; then
   echo "10) chore: Other changes that don't modify src or test files"
   echo "11) revert: Reverts a previous commit"
   echo "12) custom: Enter a custom type"
-  
+
   # Read user choice directly instead of using select
   echo -e "${GREEN}Enter selection (1-12):${NC}"
   read -r choice
-  
+
   # Process the selection
   case $choice in
-      1)
-          type="feat"
-          ;;
-      2)
-          type="fix"
-          ;;
-      3)
-          type="docs"
-          ;;
-      4)
-          type="style"
-          ;;
-      5)
-          type="refactor"
-          ;;
-      6)
-          type="perf"
-          ;;
-      7)
-          type="test"
-          ;;
-      8)
-          type="build"
-          ;;
-      9)
-          type="ci"
-          ;;
-      10)
-          type="chore"
-          ;;
-      11)
-          type="revert"
-          ;;
-      12)
-          echo -e "${GREEN}Enter custom type (without colon):${NC}"
-          read -r type
-          ;;
-      *)
-          echo -e "${RED}Invalid selection. Defaulting to 'chore'.${NC}"
-          type="chore"
-          ;;
+  1)
+    type="feat"
+    ;;
+  2)
+    type="fix"
+    ;;
+  3)
+    type="docs"
+    ;;
+  4)
+    type="style"
+    ;;
+  5)
+    type="refactor"
+    ;;
+  6)
+    type="perf"
+    ;;
+  7)
+    type="test"
+    ;;
+  8)
+    type="build"
+    ;;
+  9)
+    type="ci"
+    ;;
+  10)
+    type="chore"
+    ;;
+  11)
+    type="revert"
+    ;;
+  12)
+    echo -e "${GREEN}Enter custom type (without colon):${NC}"
+    read -r type
+    # Ensure the type is lowercase
+    type=$(echo "$type" | tr '[:upper:]' '[:lower:]')
+    ;;
+  *)
+    echo -e "${RED}Invalid selection. Defaulting to 'chore'.${NC}"
+    type="chore"
+    ;;
   esac
-  
+
   echo -e "${BLUE}Selected type: ${YELLOW}$type${NC}"
 
   # Prompt for scope (optional)
@@ -208,25 +231,28 @@ if [ -z "$type" ]; then
   echo -e "${GREEN}Is this a BREAKING CHANGE? (y/N):${NC}"
   read -r breaking_change
   if [[ $breaking_change == "y" || $breaking_change == "Y" ]]; then
-      breaking="!"
+    breaking="!"
   else
-      breaking=""
+    breaking=""
   fi
 
   # If -m flag was provided, use its value as the message
   if [ "$has_message" = true ] && [ -n "$message_value" ]; then
-      message="$message_value"
-      echo -e "${BLUE}Using provided commit message: ${YELLOW}$message${NC}"
+    message="$message_value"
+    echo -e "${BLUE}Using provided commit message: ${YELLOW}$message${NC}"
   else
-      # Prompt for commit message
-      echo -e "${GREEN}Enter commit message:${NC}"
-      read -r message
+    # Prompt for commit message
+    echo -e "${GREEN}Enter commit message:${NC}"
+    read -r message
   fi
 fi
 
+# Format the message to follow conventional commit standards
+message=$(ensure_proper_format "$message")
+
 # Format scope if provided
 if [ -n "$scope" ]; then
-    scope="($scope)"
+  scope="($scope)"
 fi
 
 # Construct the commit message
@@ -255,10 +281,10 @@ if [ "$edit_message" = false ] && [ "$has_message" = false ]; then
   echo -e "${BLUE}e - Open editor to modify the message${NC}"
   read -r confirm
   if [[ $confirm == "n" || $confirm == "N" ]]; then
-      echo -e "${RED}Commit canceled.${NC}"
-      exit 1
+    echo -e "${RED}Commit canceled.${NC}"
+    exit 1
   elif [[ $confirm == "e" || $confirm == "E" ]]; then
-      edit_message=true
+    edit_message=true
   fi
 fi
 
@@ -270,16 +296,16 @@ for arg in "$@"; do
     skip_next=false
     continue
   fi
-  
+
   if [[ "$arg" == "-m" || "$arg" == "--message" ]]; then
     skip_next=true
     continue
   fi
-  
+
   if [[ "$arg" == -m=* || "$arg" == --message=* ]]; then
     continue
   fi
-  
+
   if [ "$arg" != "--no-wizard" ]; then
     new_args+=("$arg")
   fi
@@ -294,12 +320,12 @@ fi
 if [ "$edit_message" = true ]; then
   # Create a temporary file for the commit message
   temp_file=$(mktemp)
-  echo "$commit_msg" > "$temp_file"
-  
+  echo "$commit_msg" >"$temp_file"
+
   # Execute git commit with the file
   git commit -F "$temp_file" -e "${new_args[@]}"
   exit_code=$?
-  
+
   # Clean up
   rm -f "$temp_file"
 else
