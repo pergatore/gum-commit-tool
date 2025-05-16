@@ -83,8 +83,10 @@ show_help() {
 }
 
 # Function to ensure proper conventional commit format
+# Returns formatted message via stdout and sets a notification via the global NOTIFICATION variable
 ensure_proper_format() {
   local message="$1"
+  local modified=false
   
   # Ensure the first word of the message is lowercase
   # Split the message into first word and rest
@@ -97,11 +99,14 @@ ensure_proper_format() {
     
     # Combine and return
     message="$lowercase_first$rest_of_message"
-    echo -e "${YELLOW}Note: First word capitalization corrected to match conventional commit standards${NC}"
+    NOTIFICATION="First word capitalization corrected to match conventional commit standards"
   fi
   
   echo "$message"
 }
+
+# Initialize notification variable
+NOTIFICATION=""
 
 # Parse arguments to check for --help, --no-wizard, and -m/--message
 skip_wizard=false
@@ -300,7 +305,13 @@ if [ -z "$type" ]; then
 fi
 
 # Format the message to follow conventional commit standards
+NOTIFICATION=""  # Reset notification
 message=$(ensure_proper_format "$message")
+
+# Display notification if message was changed
+if [ -n "$NOTIFICATION" ]; then
+  echo -e "${YELLOW}Note: $NOTIFICATION${NC}"
+fi
 
 # Format scope if provided
 if [ -n "$scope" ]; then
