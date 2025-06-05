@@ -1,165 +1,251 @@
-# Simple Git Commit Wizard
+# Gum Conventional Commit Tool
 
-A command-line tool that standardizes your Git commit messages according to the [Conventional Commits](https://www.conventionalcommits.org/) specification. This makes your repository history more consistent and easier to navigate.
+A modern, interactive command-line tool that creates beautiful, standardized Git commit messages following the [Conventional Commits](https://www.conventionalcommits.org/) specification. Built with [Gum](https://github.com/charmbracelet/gum) for a delightful user experience.
 
 ![](https://img.shields.io/badge/Bash-4.0%2B-green)
+![](https://img.shields.io/badge/Gum-Required-purple)
 ![](https://img.shields.io/badge/License-MIT-blue)
 
-## What it does
+## ✨ What it does
 
-Git Commit Wizard:
+This tool transforms your commit workflow with:
 
-- Intercepts `git commit` commands
-- Prompts you to select a commit type (feat, fix, docs, etc.)
-- Optionally adds a scope and breaking change indicator
-- Formats your commit message according to conventional commits
-- Can be bypassed when needed
+- 🎯 **Interactive commit type selection** with numbered options
+- 🎨 **Beautiful UI** powered by Gum's styling capabilities
+- 📝 **Comprehensive commit building** with optional scope, breaking changes, and issue references
+- 🔄 **Smart amend support** that reuses previous commit values
+- 📋 **Live preview** of your commit message before creation
+- 🚫 **Bypass option** when you need standard Git behavior
 
-## Features
+## 🚀 Features
 
-- 🔄 Seamlessly replaces the standard Git commit flow
-- 📋 Interactive menu for selecting commit types
-- 🔍 Optional scope and breaking change support
-- 📝 Editor integration (can open your editor after generation)
-- ♻️ Smart handling of `--amend` by extracting format from previous commit
-- 🚫 Bypass option with `--no-wizard` for when you need standard Git behavior
+- **Seamless Integration**: Intercepts `git commit` commands automatically
+- **Interactive Selection**: Choose commit types by number (1-11) for speed
+- **Rich Formatting**: Support for scopes, breaking changes, extended descriptions, and issue references
+- **Beautiful Preview**: See exactly how your commit will look before confirming
+- **Editor Support**: Open your editor for final tweaks with `-e` flag
+- **Amend Intelligence**: Extracts and reuses values from previous commits when amending
+- **Flexible Usage**: Works with all standard git commit flags
 
-## Installation
+## 📦 Prerequisites
 
-### Bash Users
+This tool requires [Gum](https://github.com/charmbracelet/gum) to be installed:
 
+### Install Gum
+
+**macOS:**
 ```bash
-# Create the installation script
-curl -o install-git-wizard.sh https://raw.githubusercontent.com/pergatore/git-commit-wizard/main/install-git-wizard.sh
-
-# Make it executable
-chmod +x install-git-wizard.sh
-
-# Run the installer
-./install-git-wizard.sh
-
-# Apply changes to current session
-source ~/.bashrc
+brew install gum
 ```
 
-### Zsh Users
+**Linux:**
+```bash
+# See https://github.com/charmbracelet/gum#installation for your distribution
+```
+
+**Other platforms:**
+Visit the [Gum installation guide](https://github.com/charmbracelet/gum#installation)
+
+## 🔧 Installation
+
+### Quick Install
+
+Download both files and run the installer:
 
 ```bash
-# Create the installation script
-curl -o install-git-wizard.sh https://raw.githubusercontent.com/pergatore/git-commit-wizard/main/install-git-wizard-zsh.sh
+# Download the files
+curl -O https://raw.githubusercontent.com/pergatore/gum-commit-tool/main/gum-commit.sh
+curl -O https://raw.githubusercontent.com/pergatore/gum-commit-tool/main/gum-commit-installer.sh
 
-# Make it executable
-chmod +x install-git-wizard.sh
+# Make the installer executable
+chmod +x gum-commit-installer.sh
 
 # Run the installer
-./install-git-wizard.sh
+./gum-commit-installer.sh
 
-# Apply changes to current session
-source ~/.zshrc
+# Apply changes to your current session
+source ~/.bashrc  # or ~/.zshrc for Zsh users
 ```
 
 ### Manual Installation
 
-If you prefer to install manually:
-
-1. Download the script from this repository
-2. Place it in `~/.git-scripts/git-commit-wizard.sh`
-3. Make it executable: `chmod +x ~/.git-scripts/git-commit-wizard.sh`
-4. Add a Git alias: `git config --global alias.commit '!~/.git-scripts/git-commit-wizard.sh'`
-5. Add to your shell config (`~/.bashrc` or `~/.zshrc`):
+1. **Download the script:**
    ```bash
-   # Git commit wrapper function
+   mkdir -p ~/.git-scripts
+   curl -o ~/.git-scripts/gum-commit.sh https://raw.githubusercontent.com/pergatore/gum-commit-tool/main/gum-commit.sh
+   chmod +x ~/.git-scripts/gum-commit.sh
+   ```
+
+2. **Set up Git alias:**
+   ```bash
+   git config --global alias.commit '!~/.git-scripts/gum-commit.sh'
+   ```
+
+3. **Add shell integration:**
+   Add to your `~/.bashrc` or `~/.zshrc`:
+   ```bash
+   # Gum commit wrapper function
    git() {
-     if [[ $1 == "commit" ]]; then
-       shift 1
-       command ~/.git-scripts/git-commit-wizard.sh "$@"
-     else
-       command git "$@"
-     fi
+       if [[ $1 == "commit" ]]; then
+           shift 1
+           command ~/.git-scripts/gum-commit.sh "$@"
+       else
+           command git "$@"
+       fi
    }
    ```
 
-## Usage
+4. **Reload your shell:**
+   ```bash
+   source ~/.bashrc  # or ~/.zshrc
+   ```
 
-### Basic Usage
+## 🎮 Usage
 
-Simply use Git normally. The wizard will be invoked whenever you run `git commit`:
+### Basic Commit
+
+Simply use Git as normal - the interactive wizard starts automatically:
 
 ```bash
 git commit
 ```
 
-The wizard will guide you through selecting:
-1. Commit type (feat, fix, docs, etc.)
-2. Scope (optional)
-3. Breaking change indicator (optional)
-4. Commit message
+You'll be guided through:
+1. **Type selection** (numbered 1-11 for quick selection)
+2. **Optional scope** (e.g., auth, api, ui)
+3. **Breaking change** confirmation
+4. **Commit description**
+5. **Extended description** (optional)
+6. **Issue references** (optional)
+7. **Beautiful preview** before confirming
 
-### Opening Editor
+### Quick Commit with Predefined Message
 
-If you want to further edit the commit message in your preferred editor:
+Provide a message and let the wizard handle type/scope:
+
+```bash
+git commit -m "add user authentication"
+```
+
+The wizard will still prompt for type and scope, but use your provided message.
+
+### Editor Integration
+
+Open your editor after the wizard creates the message:
 
 ```bash
 git commit -e
 ```
 
-Or, during the wizard prompt, select 'e' when asked to proceed.
-
-### Bypassing the Wizard
-
-To bypass the wizard and use standard Git behavior:
-
-```bash
-git commit --no-wizard
-```
-
 ### Amending Commits
 
-When amending a commit:
+When amending, the tool extracts values from your previous commit:
 
 ```bash
 git commit --amend
 ```
-The wizard will extract the type, scope, and breaking change indicators from the previous commit message, allowing you to maintain consistency.
 
-### Using the -m flag
+You can choose to reuse the previous type, scope, and breaking change settings.
 
-When using the -m flag: 
+### Bypassing the Wizard
+
+For standard Git commit behavior:
+
 ```bash
-git commit -m "Message"
+git commit --no-wizard -m "your message"
 ```
-The wizard will use the provided message and just prompt for type and scope
 
+### All Standard Git Flags
 
-## Commit Types
+The tool supports all standard git commit options:
 
-| Type | Description |
-|------|-------------|
-| feat | A new feature |
-| fix | A bug fix |
-| docs | Documentation only changes |
-| style | Changes that do not affect the meaning of the code |
-| refactor | A code change that neither fixes a bug nor adds a feature |
-| perf | A code change that improves performance |
-| test | Adding missing tests or correcting existing tests |
-| build | Changes that affect the build system or external dependencies |
-| ci | Changes to CI configuration files and scripts |
-| chore | Other changes that don't modify src or test files |
-| revert | Reverts a previous commit |
+```bash
+git commit -a              # Stage and commit all changes
+git commit -v              # Show diff in editor
+git commit --amend         # Amend previous commit
+git commit -e              # Open editor after wizard
+git commit --no-wizard     # Skip wizard entirely
+```
 
-## Uninstallation
+## 📋 Commit Types
+
+| # | Type | Description |
+|---|------|-------------|
+| 1 | **feat** | A new feature |
+| 2 | **fix** | A bug fix |
+| 3 | **docs** | Documentation only changes |
+| 4 | **style** | Changes that do not affect the meaning of the code |
+| 5 | **refactor** | A code change that neither fixes a bug nor adds a feature |
+| 6 | **test** | Adding missing tests or correcting existing tests |
+| 7 | **chore** | Other changes that don't modify src or test files |
+| 8 | **perf** | A code change that improves performance |
+| 9 | **ci** | Changes to CI configuration files and scripts |
+| 10 | **build** | Changes that affect the build system or external dependencies |
+| 11 | **revert** | Reverts a previous commit |
+
+## 🎨 Example Output
+
+The tool creates properly formatted conventional commits:
+
+```
+feat(auth): add user login validation
+
+Add comprehensive validation for user login including:
+- Email format verification
+- Password strength requirements
+- Rate limiting for failed attempts
+
+BREAKING CHANGE: Login endpoint now requires email instead of username
+
+Closes: #123, #456
+```
+
+## 🛠️ Troubleshooting
+
+### Gum Not Found
+
+If you see "gum is not installed":
+1. Install Gum following the [installation guide](https://github.com/charmbracelet/gum#installation)
+2. Restart your terminal
+3. Try the command again
+
+### Function Not Working
+
+If `git commit` doesn't trigger the wizard:
+1. Reload your shell: `source ~/.bashrc` (or `~/.zshrc`)
+2. Start a new terminal session
+3. Check if the function exists: `type git`
+
+### Bypassing Issues
+
+If you need to temporarily disable the wizard:
+```bash
+git commit --no-wizard -m "emergency fix"
+```
+
+## 🗑️ Uninstallation
 
 ```bash
 # Remove git alias
 git config --global --unset alias.commit
 
+# Remove the script
+rm ~/.git-scripts/gum-commit.sh
+
 # Remove function from shell config
 # Edit ~/.bashrc or ~/.zshrc and remove the git() function
-
-# Remove the script
-rm ~/.git-scripts/git-commit-wizard.sh
 ```
 
-## License
+## 🤝 Contributing
 
-MIT License
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📄 License
+
+MIT License - see LICENSE file for details.
+
+## 🙏 Acknowledgments
+
+- [Conventional Commits](https://www.conventionalcommits.org/) for the specification
+- [Gum](https://github.com/charmbracelet/gum) by Charm for the beautiful CLI components
+- The Git community for making version control awesome
