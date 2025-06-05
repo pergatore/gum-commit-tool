@@ -42,13 +42,15 @@ DESCRIPTION=$(gum input --placeholder "Brief description of changes" --prompt "D
 
 # Optional: Longer description
 echo
-BODY=$(gum write --placeholder "Optional longer description (Ctrl+D to finish, Enter to skip)" --header "Extended description:")
+echo "Extended description (optional):"
+BODY=$(gum write --placeholder "Optional longer description (Ctrl+D to finish, Enter to skip)")
 
 # Optional: Breaking change
 echo
 BREAKING_CHANGE=""
 if gum confirm "Is this a breaking change?"; then
-  BREAKING_CHANGE=$(gum write --placeholder "Describe the breaking change (Ctrl+D to finish)" --header "Breaking change description:")
+  echo "Breaking change description:"
+  BREAKING_CHANGE=$(gum write --placeholder "Describe the breaking change (Ctrl+D to finish)")
 fi
 
 # Optional: Issues/tickets
@@ -116,9 +118,10 @@ if gum confirm "Commit these changes?"; then
   git commit -m "$COMMIT_MSG"
   echo "✅ Commit created successfully!"
 
-  # Show the commit
+  # Show the commit message that was created
   echo
-  git log -1 --oneline
+  echo "📋 Created commit:"
+  echo "$COMMIT_MSG"
 else
   echo "❌ Commit cancelled"
   exit 1
