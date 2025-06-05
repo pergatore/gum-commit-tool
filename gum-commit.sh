@@ -28,9 +28,39 @@ echo "🚀 Creating a conventional commit..."
 echo
 
 # Select commit type
-TYPE=$(gum choose \
-  "feat" "fix" "docs" "style" "refactor" "test" "chore" "perf" "ci" "build" "revert" \
-  --header "Select commit type:")
+echo "Select commit type:"
+echo "1) feat - A new feature"
+echo "2) fix - A bug fix"
+echo "3) docs - Documentation only changes"
+echo "4) style - Changes that do not affect the meaning of the code"
+echo "5) refactor - A code change that neither fixes a bug nor adds a feature"
+echo "6) test - Adding missing tests or correcting existing tests"
+echo "7) chore - Other changes that don't modify src or test files"
+echo "8) perf - A code change that improves performance"
+echo "9) ci - Changes to CI configuration files and scripts"
+echo "10) build - Changes that affect the build system or external dependencies"
+echo "11) revert - Reverts a previous commit"
+echo
+
+CHOICE=$(gum input --placeholder "Enter number (1-11)" --prompt "Choice: ")
+
+case $CHOICE in
+1) TYPE="feat" ;;
+2) TYPE="fix" ;;
+3) TYPE="docs" ;;
+4) TYPE="style" ;;
+5) TYPE="refactor" ;;
+6) TYPE="test" ;;
+7) TYPE="chore" ;;
+8) TYPE="perf" ;;
+9) TYPE="ci" ;;
+10) TYPE="build" ;;
+11) TYPE="revert" ;;
+*)
+  echo "Invalid choice. Defaulting to 'chore'"
+  TYPE="chore"
+  ;;
+esac
 
 # Optional: Select scope
 echo
