@@ -44,6 +44,10 @@ brew install gum
 ```
 
 **Other platforms:**
+```bash
+go install github.com/charmbracelet/gum@latest
+```
+
 Visit the [Gum installation guide](https://github.com/charmbracelet/gum#installation)
 
 ## 🔧 Installation
