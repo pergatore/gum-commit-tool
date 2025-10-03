@@ -38,12 +38,8 @@ This tool requires [Gum](https://github.com/charmbracelet/gum) to be installed:
 brew install gum
 ```
 
-**Linux:**
-```bash
-# See https://github.com/charmbracelet/gum#installation for your distribution
-```
 
-**Other platforms:**
+*Linux:**
 ```bash
 go install github.com/charmbracelet/gum@latest
 ```
